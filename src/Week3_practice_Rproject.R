@@ -107,27 +107,3 @@ dplyr::left_join(df,short_ear_df,by="time")
 # combind with vector of different length 
 cbind(df, ear_weight=c(20,40))
 df$ear_weight <- c(20,40)
-
-#2_ggplot2
-
-library(ggplot2)
-library(dplyr)
-
-data %>% 
-  ggplot(aes(x=date,y=weight, color=var))+
-  geom_point()+
-  geom_line(aes(group=group), color='purple')+ # link the point by group.
-  xlab("date of harvest")+ #x axis title
-  ylab("ear weight(g)")+   #y axis title
-  guides(color=guide_legend(title="Cultivar"))+ #change legend title
-  theme_minimal()
-
-extract_group <- data$group
-extract_group <- length(unique(data$group))
-print(extract_group)
-
-phenology <- read.csv ('./data/phenology_short.csv')
-phenology %>% 
-  ggplot(.,aes(x=var,y=value))+
-  geom_boxplot()+
-  facet_grid(Year~stage)
