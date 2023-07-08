@@ -41,10 +41,10 @@ plot_fun <- function(df){
 # -------------------------------------------------------------------------
 p <- "data/Grain_Counting/gc_42_11.xlsx"
 
-# graindf<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
-#   readx(p,.x)
-# }) %>% filter(!is.na(floret.pos)) 
-# graindf %>% plot_fun()
+graindf<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
+  readx(p,.x)
+}) %>% filter(!is.na(floret.pos))
+graindf %>% plot_fun()
 
-readx(p,1)%>% filter(!is.na(floret.pos))%>% plot_fun() 
+# readx(p,4)%>% filter(!is.na(floret.pos))%>% plot_fun() 
 
