@@ -3,7 +3,9 @@ library(dplyr)
 library(ggplot2)
 library(ggpol)
 library(viridis)
-
+library(readxl)
+install.packages('dyplr')
+#read data
 readx<- function(p,sh){
   df <- readxl::read_xlsx(p,sheet = sh) %>% 
     mutate(across(starts_with("kernel"),function(x)as.character(x))) %>% 
@@ -16,7 +18,40 @@ readx<- function(p,sh){
              ifelse(.==3,5,.)) %>%
     mutate(var = case_when(var == "Potenzial" ~"potenzial",
                            T ~ var))
-}
+}  
+
+p <- "data/Grain_Counting/gc_42_11.xlsx"
+
+graindf<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
+  readx(p,.x)
+  }) %>% filter(!is.na(floret.pos))
+
+#Calculate number of grains
+
+graindf_num <- graindf %>%
+  select(var, plot_id, rep, kernel.type) %>% 
+  group_by(rep,kernel.type) %>% 
+  mutate(grainnum = n()) %>%
+  distinct(rep, kernel.type, grainnum)
+
+graindf_num_tot <- graindf_num %>% 
+  filter(kernel.type %in% c("kernel.S", "kernel.M", "kernel.L")) %>%
+  group_by(rep) %>%
+  summarize(total_kernels = sum(grainnum))
+
+
+#Show data in Boxplot
+##For different kerneltypes
+ggplot(graindf_num, aes(x = kernel.type, y = grainnum)) +
+  geom_boxplot() +
+  labs(x = "Kernel Type", y = "Number of Kernels") +
+  ggtitle("Number of Kernels per Kernel Type") +
+  theme_minimal()
+
+##For all kernels
+ggplot(graindf_num_tot, aes(x = ))
+
+
 #reading data
 p <- "data/Grain_Counting/gc_42_11.xlsx"
 
