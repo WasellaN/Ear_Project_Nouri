@@ -35,6 +35,8 @@ plot_fun <- function(df){
                           labels = paste0("kernel.",c("S","M","L")))+
     theme(panel.grid.minor.x=element_blank(),strip.background = element_blank(),
           legend.position = "bottom")
+  
+
   return(p)
   
 }
@@ -47,4 +49,11 @@ graindf<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
 graindf %>% plot_fun()
 
 # readx(p,4)%>% filter(!is.na(floret.pos))%>% plot_fun() 
+
+p <- "data/Grain_Counting/gc_40_11.xlsx"
+
+graindf<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
+  readx(p,.x)
+}) %>% filter(!is.na(floret.pos))
+graindf %>% plot_fun()
 
