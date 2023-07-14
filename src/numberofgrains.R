@@ -20,68 +20,97 @@ readx<- function(p,sh){
                            T ~ var))
 }  
 
-p <- "data/Grain_Counting/gc_42_11.xlsx"
+p <- "data/Grain_Counting/gc_40_11.xlsx"
 
-graindf<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
+graindf40<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
   readx(p,.x)
   }) %>% filter(!is.na(floret.pos))
 
-#Calculate number of grains
 
-graindf_num <- graindf %>%
+p <- "data/Grain_Counting/gc_42_11.xlsx"
+
+graindf42<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
+  readx(p,.x)
+}) %>% filter(!is.na(floret.pos))
+
+#Calculate number of grains
+##40
+graindf_num40 <- graindf40 %>%
   select(var, plot_id, rep, kernel.type) %>% 
   group_by(rep,kernel.type) %>% 
   mutate(grainnum = n()) %>%
-  distinct(rep, kernel.type, grainnum)
+  distinct(plot_id, rep, kernel.type, grainnum)
 
-graindf_num_tot <- graindf_num %>% 
+graindf_num_tot40 <- graindf_num40 %>% 
   filter(kernel.type %in% c("kernel.S", "kernel.M", "kernel.L")) %>%
-  group_by(rep) %>%
-  summarize(total_kernels = sum(grainnum))
+  group_by(plot_id, rep) %>%
+  summarize(total_kernels = sum(grainnum), .groups = "drop")
+##42
+graindf_num42 <- graindf42 %>%
+  select(var, plot_id, rep, kernel.type) %>% 
+  group_by(rep,kernel.type) %>% 
+  mutate(grainnum = n()) %>%
+  distinct(plot_id, rep, kernel.type, grainnum)
+
+graindf_num_tot42 <- graindf_num42 %>% 
+  filter(kernel.type %in% c("kernel.S", "kernel.M", "kernel.L")) %>%
+  group_by(plot_id, rep) %>%
+  summarize(total_kernels = sum(grainnum), .groups = "drop")
+
+
 
 
 #Show data in Boxplot
 ##For different kerneltypes
-ggplot(graindf_num, aes(x = kernel.type, y = grainnum)) +
+ggplot(graindf_num1, aes(x = kernel.type, y = grainnum)) +
   geom_boxplot() +
   labs(x = "Kernel Type", y = "Number of Kernels") +
   ggtitle("Number of Kernels per Kernel Type") +
   theme_minimal()
 
 ##For all kernels
-ggplot(graindf_num_tot, aes(x = ))
+ggplot(graindf_num_tot1, aes(x = "", y = total_kernels)) +
+  geom_boxplot() +
+  labs(x = "gc_40_11", y = "Kernels") +
+  ggtitle("Total Kernels per Ear")+
+  theme(axis.text.x = element_blank())+
+  ylim(0, max(graindf_num_tot$total_kernels))+
+  theme_minimal()
+
+#combine data for diffrent plots
+graindf_num_tot_comb <- bind_rows(graindf_num_tot40, graindf_num_tot42)
+graindf_num_comb <- bind_rows(graindf_num40, graindf_num42)
 
 
-#reading data
-p <- "data/Grain_Counting/gc_42_11.xlsx"
+# Create the boxplot with two batches side by side
+ggplot(graindf_num_tot_comb, aes(x = "", y = total_kernels)) +
+  stat_boxplot(geom="errorbar", width=0.5)+
+  geom_boxplot() +
+  labs(x = NULL, y = "Number of Kernels") +
+  ggtitle("Total kernels per treatment") +
+  facet_wrap(~ plot_id, nrow = 1) +
+  theme(axis.ticks.x = element_blank(), axis.text.x = element_blank())
 
-graindf<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
-  readx(p,.x)
-}) %>% filter(!is.na(floret.pos))
-graindf %>% plot_fun()
+##Violin plot
+ggplot(graindf_num_tot_comb, aes(x = "", y = total_kernels)) +
 
+  geom_violin() +
+  labs(x = NULL, y = "Number of Kernels") +
+  ggtitle("Total kernels per treatment") +
+  facet_wrap(~ plot_id, nrow = 1) +
+  theme(axis.ticks.x = element_blank(), axis.text.x = element_blank())
 
-#plot for avarage grain number
-hypo1 <- function(df){
-  p <- graindf %>%
-    group_by(plot_id,rep,spike) %>%
-    mutate(kernel.num = sum(length(kernel.type))) %>%
-    group_by(plot_id,spike) %>%
-    mutate(kernel.num = mean(kernel.num)) %>%
-    group_by(plot_id) %>%
-    #group_by(plot_id, rep, spike) %>%
-    #mutate(kernel.var = ) %>%
-    mutate(kernel.pos = as.numeric(cut(spike,breaks=3))) %>%
-    mutate(kernel.pos = case_when(kernel.pos == 1 ~"basal",
-                                  kernel.pos == 2 ~"central",
-                                  T ~"apical")) %>%
-    mutate(treatment = ifelse(plot_id == 57, "early","late")) %>%
-    ungroup()%>%
-    ggplot(aes(x = kernel.num, y = factor(spike))) +
-    geom_boxplot() +
-    labs(x = "Kernel Number", y = "Spike") +
-    scale_fill_discrete(name = "Spike")
-  return(p)
-}
-hypo1(graindf)
+#Boxplot with kerneltypes
+ggplot(graindf_num_comb, aes(x = kernel.type, y = grainnum)) +
+  stat_boxplot(geom="errorbar", width=0.5)+
+  geom_boxplot() +
+  labs(x = NULL, y = "Number of Kernels") +
+  ggtitle("Total kernels per treatment") +
+  facet_wrap(~ plot_id, nrow = 1) 
+ 
+
+#Spalten in Basal Central Apical
+
+graindf40_acb <- graindf40 %>% 
+  
 
