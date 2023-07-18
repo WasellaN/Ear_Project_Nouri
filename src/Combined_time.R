@@ -2,12 +2,68 @@ rm(list = ls())
 library(dplyr)
 library(ggplot2)
 library(ggpol)
-library(viridis)
 library(readxl)
+
+readx<- function(p,sh){
+  df <- readxl::read_xlsx(p,sheet = sh) %>% 
+    mutate(time_id = ifelse(plot_id == 40, "early", ifelse(plot_id == 42, "late", NA))) %>% 
+    mutate(plot_id= as.character(plot_id)) %>% 
+    mutate(Notes = as.character(Notes)) %>% 
+    mutate(across(starts_with("kernel"),function(x)as.character(x))) %>% 
+    tidyr::pivot_longer(starts_with("kernel"),names_to = "kernel.type",values_to = "floret.pos") %>% 
+    mutate(floret.pos=strsplit(floret.pos,",")) %>% 
+    tidyr::unnest(floret.pos) %>% 
+    mutate(floret.pos=as.numeric(floret.pos),
+           kernel.size=factor(kernel.type,levels=paste0("kernel.",c("S","M","L"))) %>% as.numeric() %>% 
+             # create contrast
+             ifelse(.==3,5,.)) %>%
+    mutate(var = case_when(var == "Potenzial" ~"potenzial",
+                           T ~ var))
+} 
+
+readx2<- function(p,sh){
+  df <- readxl::read_xlsx(p,sheet = sh) %>% 
+    mutate(time_id = ifelse(plot_id == 40, "early", ifelse(plot_id == 42, "late", NA))) %>% 
+    mutate(plot_id= as.character(plot_id)) %>% 
+    mutate(Notes = as.character(Notes)) %>% 
+    mutate(var = case_when(var == "Potenzial" ~"potenzial",
+                           T ~ var))
+} 
+
+
+p <- "data/Grain_Counting/gc_40_1.xlsx"
+
+graindf1<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
+  readx2(p,.x)
+}) %>% mutate(batch.id= as.character(1)) %>% 
+  select(var, rep, plot_id, batch.id, spike, flower)
+
+p <- "data/Grain_Counting/gc_40_11.xlsx"
+
+graindf11<- purrr::map_dfr(1:length(readxl::excel_sheets(p)),~{
+  readx(p,.x)
+}) %>% filter(!is.na(floret.pos)) %>% mutate(batch.id= as.character(11)) %>% 
+  select(var, rep, plot_id, batch.id, spike, flower) %>% 
+  group_by(rep) %>% 
+  distinct(var, rep, plot_id, batch.id, spike, flower)
+
+
+
+
+# Combine all tables into one dataframe
+combined_df <- bind_rows(graindf1, graindf11)
+
+
+
+
+
+
+
+
 #Summary SE function
 summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
                       conf.interval=.95, .drop=TRUE) {
-  library(plyr)
+
   
   # New version of length which can handle NA's: if na.rm==T, don't count them
   length2 <- function (x, na.rm=FALSE) {
@@ -41,45 +97,14 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
   return(datac)
 }
 
-# Specify the path to the Excel file
-file_path <- "./data/Grain_Counting/gc_40_1.xlsx"
+library(plyr)
+combined_df_SE <- summarySE(combined_df, measurevar="flower", groupvars=c("batch.id","spike"))
 
-# Read all sheets into a list of dataframes
-
-sheets <- excel_sheets(file_path)
-
-# Read each sheet and store them in a list
-tables <- lapply(sheets, function(sheet) {
-  read_excel(file_path, sheet = sheet, col_names = TRUE)
-})
-
-# Combine all tables into one dataframe
-combined_df <- bind_rows(tables)
-
-combined_df <- combined_df %>% 
-  mutate(time.id=as.character(1))
-graindf40 <- graindf40 %>% 
-  mutate(time.id=as.character(11))
-
-combined_df_time <- bind_rows(combined_df, graindf40) %>% 
-  select(rep, spike, flower, time.id)
-
-ggplot(combined_df_time, aes(x = spike, y = flower, group = spike, color = time.id)) +
-  stat_boxplot(geom="errorbar", width=0.5)+
-  geom_boxplot() +
-  geom_path() +
-  coord_flip() +
-  facet_grid(rows = 'time.id') +
-  labs(x = "spike", y = "flowers") 
-
-combined_df_time_c <- summarySE(combined_df_time, measurevar="flower", groupvars=c("time.id","spike"))
-
-ggplot(combined_df_time_c, aes(x=spike, y=flower, group = time.id, colour=time.id)) + 
+ggplot(combined_df_SE, aes(x=spike, y=flower, group = batch.id, colour=batch.id)) + 
   geom_errorbar(aes(ymin=flower-se, ymax=flower+se), width=.1) +
   coord_flip() +
   geom_line() +
   labs(x = "Spikelet No.", y = "Number of Florets", color = "batch.id") +
   geom_point() +
-  scale_color_discrete(guide = guide_legend(override.aes = list(shape = NA)))+
   ggtitle("Number of Florets between batches")
 
