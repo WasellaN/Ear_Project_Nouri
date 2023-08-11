@@ -1,5 +1,4 @@
 rm(list = ls())
-detach(package:plyr, unload = TRUE)
 library(dplyr)
 library(ggplot2)
 library(ggpol)
@@ -62,6 +61,26 @@ graindf_num_tot42 <- graindf_num42 %>%
   group_by(plot_id, rep) %>%
   summarize(total_kernels = sum(grainnum), .groups = "drop")
 
+
+
+
+#Show data in Boxplot
+##For different kerneltypes
+ggplot(graindf_num1, aes(x = kernel.type, y = grainnum)) +
+  geom_boxplot() +
+  labs(x = "Kernel Type", y = "Number of Kernels") +
+  ggtitle("Number of Kernels per Kernel Type") +
+  theme_minimal()
+
+##For all kernels
+ggplot(graindf_num_tot1, aes(x = "", y = total_kernels)) +
+  geom_boxplot() +
+  labs(x = "gc_40_11", y = "Kernels") +
+  ggtitle("Total Kernels per Ear")+
+  theme(axis.text.x = element_blank())+
+  ylim(0, max(graindf_num_tot$total_kernels))+
+  theme_minimal()
+
 #combine data for diffrent plots
 graindf_num_tot_comb <- bind_rows(graindf_num_tot40, graindf_num_tot42)
 graindf_num_comb <- bind_rows(graindf_num40, graindf_num42)
@@ -78,6 +97,15 @@ ggplot(graindf_num_tot_comb, aes(x = plot_id, y = total_kernels, fill = plot_id)
   scale_x_discrete(labels = c("early", "late")) +
   theme(legend.position = "none") 
 
+##Violin plot
+ggplot(graindf_num_tot_comb, aes(x = "", y = total_kernels)) +
+
+  geom_violin() +
+  labs(x = NULL, y = "Number of Kernels") +
+  ggtitle("Total kernels per treatment") +
+  facet_wrap(~ plot_id, nrow = 1) +
+  theme(axis.ticks.x = element_blank(), axis.text.x = element_blank())
+
 #Boxplot with kerneltypes
 ggplot(graindf_num_comb, aes(x = plot_id, y = grainnum, fill = plot_id)) +
   stat_boxplot(geom="errorbar", width=0.5)+
@@ -89,7 +117,10 @@ ggplot(graindf_num_comb, aes(x = plot_id, y = grainnum, fill = plot_id)) +
   ggtitle("Total kernels per treatment") +
   theme(legend.position = "none") +
   facet_wrap(~ kernel.type, nrow = 1) 
+ 
 
-rm(list = ls())
+#Spalten in Basal Central Apical
+
+graindf40_acb <- graindf40 %>% 
   
 

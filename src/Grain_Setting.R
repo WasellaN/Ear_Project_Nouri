@@ -1,4 +1,5 @@
 rm(list = ls())
+detach(package:plyr, unload = TRUE)
 library(dplyr)
 library(ggplot2)
 library(ggpubr)
@@ -80,6 +81,7 @@ ggplot(grain_set, aes(x = factor(time_id), y = abortion.rate, fill = time_id)) +
   ggtitle("Abortion Rate by Sowing Date (Batch 11)") +
   theme(legend.position = "none")
 
+rm(list = ls())
   
 
 
